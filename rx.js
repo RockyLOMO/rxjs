@@ -1,5 +1,5 @@
 /**
- * Created by za-wangxiaoming on 2017/7/14.
+ * Created by wangxiaoming on 2017/7/14.
  */
 var rx = {
     _postMap: {},
