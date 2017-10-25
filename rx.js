@@ -1,21 +1,13 @@
 /**
  * Created by za-wangxiaoming on 2017/7/14.
  */
-(function ($) {
-    $.fn.extend({
-        attr2: function (k, v) {
-            if (arguments.length > 1) {
-                return this.prop(k, v) || this.attr(k, v);
-            }
-            return this.prop(k) || this.attr(k);
-        }
-    });
-})(jQuery);
 var rx = {
+    _postMap: {},
     post: function (url, data, onSuccess, opts) {
         opts = $.extend({
             callTimeout: 30000,
             isJsonContent: false,
+            isSingleMode: false,
             onError: null,
             onBegin: null,
             onEnd: null,
@@ -23,12 +15,15 @@ var rx = {
             onSuccess: onSuccess
         }, opts);
         try {
+            if (rx._postMap[url]) {
+                return false;
+            }
             $.ajax({
                 type: "POST",
                 url: url,
                 data: opts.isJsonContent ? JSON.stringify(data) : data,
                 dataType: opts.isJsonContent ? "json" : null,
-                contentType: opts.isJsonContent ? "application/json" : null,
+                contentType: opts.isJsonContent ? "application/json" : "application/x-www-form-urlencoded",
                 success: opts.onSuccess,
                 error: function (jqXHR, textStatus, errorThrown) {
                     if ($.isFunction(opts.onError)) {
@@ -39,25 +34,47 @@ var rx = {
                 timeout: opts.callTimeout,
                 beforeSend: opts.onBegin,
                 complete: opts.onEnd
-            }).always(opts.onDone);
+            }).always(function () {
+                rx._postMap[url] = false;
+                if (opts.onDone) {
+                    opts.onDone();
+                }
+            });
+            return rx._postMap[url] = true;
         }
         catch (e) {
             console.log(e);
         }
     },
+    getParameter: function (name, url) {
+        if (!url) url = window.location.href;
+        name = name.replace(/[\[\]]/g, "\\$&");
+        var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"), results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, " "));
+    },
+    parseParameter: function () {
+        var qs = location.search;
+        if (!qs) {
+            return {};
+        }
+        qs = qs.substring(1);
+        return JSON.parse('{"' + qs.replace(/&/g, '","').replace(/=/g, '":"') + '"}');
+    },
     validate: function (selector, onFail) {
         onFail = onFail || function (elm, failMsg, failElmId) {
-                var failElm = $("#" + failElmId);
-                if (!failMsg) {
-                    failElm.hide();
-                    elm.css("border", "solid 1px #ccc");
-                    return;
-                }
-                if (failElm.text(failMsg).show().length == 0) {
-                    $("<b id='" + failElmId + "' class='red'>" + failMsg + "</b>").insertAfter(elm);
-                }
-                elm.css("border", "dashed 1px red");
-            };
+            var failElm = $("#" + failElmId);
+            if (!failMsg) {
+                failElm.hide();
+                elm.css("border", "solid 1px #ccc");
+                return;
+            }
+            if (failElm.text(failMsg).show().length == 0) {
+                $("<b id='" + failElmId + "' class='red'>" + failMsg + "</b>").insertAfter(elm);
+            }
+            elm.css("border", "dashed 1px red");
+        };
         var firstErr = null;
         var func = function (elm, failMsg) {
             elm = $(elm);
@@ -124,7 +141,7 @@ var rx = {
                     }
                     break;
                 case "tel":
-                    if (elm.attr2("mobile")) {
+                    if (elm.attr2("mobile") != undefined) {
                         if (!/^0{0,1}1[3|5|7|8]\d{9}$/gi.test(val)) {
                             return func(elm, "请输入正确的手机号");
                         }
@@ -145,7 +162,7 @@ var rx = {
                     }
                     break;
                 default:
-                    if (elm.attr2("citizenId") || elm.attr2("citizenid")) {
+                    if (elm.attr2("citizenId") != undefined || elm.attr2("citizenid") != undefined) {
                         if (!/^(\d{15}$|^\d{18}$|^\d{17}(\d|X|x))$/gi.test(val)) {
                             return func(elm, "请输入正确的身份证号");
                         }
@@ -181,32 +198,49 @@ var rx = {
             if (!preFunc(elm, pn, data)) {
                 return;
             }
+            if (elm.attr2("timestamp") != undefined) {
+                data[pn] = new Date(elm.val()).getTime();
+                console.log("timestamp", elm.attr2("timestamp"), elm.val(), data[pn]);
+            }
             data[pn] = elm.val();
         });
         return data;
     },
-    setForm: function (selector, data) {
+    setForm: function (selector, data, mapFunc) {
         $(selector).find("input,select,img").each(function (i, elm) {
             elm = $(elm);
             var pn = elm.attr2("id") || elm.attr2("name");
+            if (!pn) {
+                return true;
+            }
+            var pv = mapFunc ? mapFunc(pn, data) : data[pn];
             if (rx.equalsIgnoreCase(elm.attr2("tagName"), "img")) {
-                var url = data[pn];
-                if (url) {
-                    elm.attr2("src", url).show();
+                if (pv) {
+                    elm.attr2("src", pv).show();
                 } else {
                     elm.hide();
                 }
                 return true;
             }
             if (rx.equalsIgnoreCase(elm.attr2("type"), "date")) {
-                if (data[pn]) {
-                    elm.val($.format.date(data[pn], "yyyy-MM-dd"));
+                if (pv) {
+                    elm.val($.format.date(pv, "yyyy-MM-dd"));
                 }
             }
             else {
-                elm.val(data[pn]);
+                elm.val(pv);
             }
         });
+    },
+    call: function (func) {
+        if (!jQuery.isFunction(func)) {
+            return null;
+        }
+        var args = [];
+        for (var i = 1; i < arguments.length; i++) {
+            args.push(arguments[i]);
+        }
+        return func(args);
     },
     stopEvent: function (e, stopBubble) {
         e = e || window.event;
@@ -221,6 +255,15 @@ var rx = {
             e.cancelBubble = true;
         }
         return false;
+    },
+    singleTimeout: function (func, delay, args) {
+        if (!func) {
+            return;
+        }
+        if (func._k) {
+            clearTimeout(func._k);
+        }
+        func._k = setTimeout(func, delay, args);
     },
     equalsIgnoreCase: function (s1, s2) {
         return (s1 || "").toUpperCase() == (s2 || "").toUpperCase();
@@ -307,24 +350,44 @@ var rx = {
         $(id).text(num--);
         setTimeout(arguments.callee, 1000, id, num, msg);
     },
-    setTemplate: function (id, data, opts) {
+    setTemplate: function (elm, data, opts) {
+        elm = $(elm);
         opts = $.extend({
-            tempName: id + 'Temp',
-            target: null,
-            isAppend: false
+            tempName: elm.attr2("id") + 'Temp',
+            action: 0,  //0 html,1 append,2 insertBefore,3 insertAfter
+            onDataEmpty: null
         }, opts);
+        var cd;
+        if (opts.onDataEmpty && (!data || ((cd = data["data"]) && cd["length"] == 0) )) {
+            opts.onDataEmpty(elm);
+            return elm;
+        }
         var html = template(opts.tempName, data);
-        //console.log("setTemplate", data);
-        var me = $("#" + id);
-        if (opts.target) {
-            $(html).insertBefore($(opts.target));
-            return me;
+        //console.log(opts.tempName, html);
+        switch (opts.action) {
+            case 1:
+                elm.append(html);
+                break;
+            case 2:
+                $(html).insertBefore(elm);
+                break;
+            case 3:
+                $(html).insertAfter(elm);
+                break;
+            default:
+                elm.html(html);
+                break;
         }
-        if (opts.isAppend) {
-            me.append(html);
-            return me;
-        }
-        me.html(html);
-        return me;
+        return elm;
     }
 };
+(function ($) {
+    $.fn.extend({
+        attr2: function (k, v) {
+            if (arguments.length > 1) {
+                return this.prop(k, v) || this.attr(k, v);
+            }
+            return this.prop(k) || this.attr(k);
+        }
+    });
+})(jQuery);
