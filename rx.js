@@ -1,6 +1,207 @@
-/**
- * Created by wangxiaoming on 2017/7/14.
- */
+var DateFormat = {};
+!function (e) {
+    var a = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        r = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+        t = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+        s = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+        u = {
+            Jan: "01",
+            Feb: "02",
+            Mar: "03",
+            Apr: "04",
+            May: "05",
+            Jun: "06",
+            Jul: "07",
+            Aug: "08",
+            Sep: "09",
+            Oct: "10",
+            Nov: "11",
+            Dec: "12"
+        }, n = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.?\d{0,3}[Z\-+]?(\d{2}:?\d{2})?/;
+    e.format = function () {
+        function e(e) {
+            return a[parseInt(e, 10)] || e
+        }
+
+        function o(e) {
+            return r[parseInt(e, 10)] || e
+        }
+
+        function l(e) {
+            var a = parseInt(e, 10) - 1;
+            return t[a] || e
+        }
+
+        function i(e) {
+            var a = parseInt(e, 10) - 1;
+            return s[a] || e
+        }
+
+        function c(e) {
+            return u[e] || e
+        }
+
+        function b(e) {
+            var a, r, t, s, u, n = e, o = "";
+            return -1 !== n.indexOf(".") && (s = n.split("."), n = s[0], o = s[1]), u = n.split(":"), 3 === u.length ? (a = u[0], r = u[1], t = u[2].replace(/\s.+/, "").replace(/[a-z]/gi, ""), n = n.replace(/\s.+/, "").replace(/[a-z]/gi, ""), {
+                time: n,
+                hour: a,
+                minute: r,
+                second: t,
+                millis: o
+            }) : {time: "", hour: "", minute: "", second: "", millis: ""}
+        }
+
+        function h(e, a) {
+            for (var r = a - String(e).length, t = 0; r > t; t++) e = "0" + e;
+            return e
+        }
+
+        return {
+            parseDate: function (e) {
+                var a = {date: null, year: null, month: null, dayOfMonth: null, dayOfWeek: null, time: null};
+                if ("number" == typeof e) return this.parseDate(new Date(e));
+                if ("function" == typeof e.getFullYear) a.year = String(e.getFullYear()), a.month = String(e.getMonth() + 1), a.dayOfMonth = String(e.getDate()), a.time = b(e.toTimeString() + "." + e.getMilliseconds()); else if (-1 != e.search(n)) values = e.split(/[T\+-]/), a.year = values[0], a.month = values[1], a.dayOfMonth = values[2], a.time = b(values[3].split(".")[0]); else switch (values = e.split(" "), 6 === values.length && isNaN(values[5]) && (values[values.length] = "()"), values.length) {
+                    case 6:
+                        a.year = values[5], a.month = c(values[1]), a.dayOfMonth = values[2], a.time = b(values[3]);
+                        break;
+                    case 2:
+                        subValues = values[0].split("-"), a.year = subValues[0], a.month = subValues[1], a.dayOfMonth = subValues[2], a.time = b(values[1]);
+                        break;
+                    case 7:
+                    case 9:
+                    case 10:
+                        a.year = values[3], a.month = c(values[1]), a.dayOfMonth = values[2], a.time = b(values[4]);
+                        break;
+                    case 1:
+                        subValues = values[0].split(""), a.year = subValues[0] + subValues[1] + subValues[2] + subValues[3], a.month = subValues[5] + subValues[6], a.dayOfMonth = subValues[8] + subValues[9], a.time = b(subValues[13] + subValues[14] + subValues[15] + subValues[16] + subValues[17] + subValues[18] + subValues[19] + subValues[20]);
+                        break;
+                    default:
+                        return null
+                }
+                return a.date = new Date(a.year, a.month - 1, a.dayOfMonth), a.dayOfWeek = String(a.date.getDay()), a
+            }, date: function (a, r) {
+                try {
+                    var t = this.parseDate(a);
+                    if (null === t) return a;
+                    for (var s = (t.date, t.year), u = t.month, n = t.dayOfMonth, c = t.dayOfWeek, b = t.time, d = "", y = "", f = "", m = !1, p = 0; p < r.length; p++) {
+                        var g = r.charAt(p), k = r.charAt(p + 1);
+                        if (m) "'" == g ? (y += "" === d ? "'" : d, d = "", m = !1) : d += g; else switch (d += g, f = "", d) {
+                            case"ddd":
+                                y += e(c), d = "";
+                                break;
+                            case"dd":
+                                if ("d" === k) break;
+                                y += h(n, 2), d = "";
+                                break;
+                            case"d":
+                                if ("d" === k) break;
+                                y += parseInt(n, 10), d = "";
+                                break;
+                            case"D":
+                                n = 1 == n || 21 == n || 31 == n ? parseInt(n, 10) + "st" : 2 == n || 22 == n ? parseInt(n, 10) + "nd" : 3 == n || 23 == n ? parseInt(n, 10) + "rd" : parseInt(n, 10) + "th", y += n, d = "";
+                                break;
+                            case"MMMM":
+                                y += i(u), d = "";
+                                break;
+                            case"MMM":
+                                if ("M" === k) break;
+                                y += l(u), d = "";
+                                break;
+                            case"MM":
+                                if ("M" === k) break;
+                                y += h(u, 2), d = "";
+                                break;
+                            case"M":
+                                if ("M" === k) break;
+                                y += parseInt(u, 10), d = "";
+                                break;
+                            case"y":
+                            case"yyy":
+                                if ("y" === k) break;
+                                y += d, d = "";
+                                break;
+                            case"yy":
+                                if ("y" === k) break;
+                                y += String(s).slice(-2), d = "";
+                                break;
+                            case"yyyy":
+                                y += s, d = "";
+                                break;
+                            case"HH":
+                                y += h(b.hour, 2), d = "";
+                                break;
+                            case"H":
+                                if ("H" === k) break;
+                                y += parseInt(b.hour, 10), d = "";
+                                break;
+                            case"hh":
+                                hour = 0 === parseInt(b.hour, 10) ? 12 : b.hour < 13 ? b.hour : b.hour - 12, y += h(hour, 2), d = "";
+                                break;
+                            case"h":
+                                if ("h" === k) break;
+                                hour = 0 === parseInt(b.hour, 10) ? 12 : b.hour < 13 ? b.hour : b.hour - 12, y += parseInt(hour, 10), d = "";
+                                break;
+                            case"mm":
+                                y += h(b.minute, 2), d = "";
+                                break;
+                            case"m":
+                                if ("m" === k) break;
+                                y += b.minute, d = "";
+                                break;
+                            case"ss":
+                                y += h(b.second.substring(0, 2), 2), d = "";
+                                break;
+                            case"s":
+                                if ("s" === k) break;
+                                y += b.second, d = "";
+                                break;
+                            case"S":
+                            case"SS":
+                                if ("S" === k) break;
+                                y += d, d = "";
+                                break;
+                            case"SSS":
+                                y += b.millis.substring(0, 3), d = "";
+                                break;
+                            case"a":
+                                y += b.hour >= 12 ? "PM" : "AM", d = "";
+                                break;
+                            case"p":
+                                y += b.hour >= 12 ? "p.m." : "a.m.", d = "";
+                                break;
+                            case"E":
+                                y += o(c), d = "";
+                                break;
+                            case"'":
+                                d = "", m = !0;
+                                break;
+                            default:
+                                y += g, d = ""
+                        }
+                    }
+                    return y += f
+                } catch (M) {
+                    return console && console.log && console.log(M), a
+                }
+            }, prettyDate: function (e) {
+                var a, r, t;
+                return ("string" == typeof e || "number" == typeof e) && (a = new Date(e)), "object" == typeof e && (a = new Date(e.toString())), r = ((new Date).getTime() - a.getTime()) / 1e3, t = Math.floor(r / 86400), isNaN(t) || 0 > t ? void 0 : 60 > r ? "just now" : 120 > r ? "1 minute ago" : 3600 > r ? Math.floor(r / 60) + " minutes ago" : 7200 > r ? "1 hour ago" : 86400 > r ? Math.floor(r / 3600) + " hours ago" : 1 === t ? "Yesterday" : 7 > t ? t + " days ago" : 31 > t ? Math.ceil(t / 7) + " weeks ago" : t >= 31 ? "more than 5 weeks ago" : void 0
+            }, toBrowserTimeZone: function (e, a) {
+                return this.date(new Date(e), a || "MM/dd/yyyy HH:mm:ss")
+            }
+        }
+    }()
+}(DateFormat), function (e) {
+    e.format = DateFormat.format
+}(jQuery), $.getDateDiff = function (e, a) {
+    var r = $.format.date(e, "yyyy-MM-dd HH:mm");
+    dateTime = Date.parse(r.replace(/-/gi, "/"));
+    var t, s, u, n, o, l = dateTime / 1e3, i = parseInt((new Date).getTime() / 1e3), c = new Date(1e3 * l),
+        b = c.getFullYear(), h = c.getMonth() + 1, d = c.getDate(), y = c.getHours(), f = c.getMinutes(),
+        m = c.getSeconds();
+    return 10 > h && (h = "0" + h), 10 > d && (d = "0" + d), 10 > y && (y = "0" + y), 10 > f && (f = "0" + f), 10 > m && (m = "0" + m), o = i - l, n = parseInt(o / 86400), u = parseInt(o / 3600), s = parseInt(o / 60), t = parseInt(o), n > 0 && 3 > n ? n + "天前" : 0 >= n && u > 0 ? u + "小时前" : 0 >= u && s > 0 ? s + "分钟前" : 60 > t ? 0 >= t ? "刚刚" : t + "秒前" : n >= 3 && 30 > n ? h + "-" + d + "&nbsp;" + y + ":" + f : n >= 30 ? b + "-" + h + "-" + d + "&nbsp;" + y + ":" + f : void 0
+};
 var rx = {
     _postMap: {},
     post: function (url, data, onSuccess, opts) {
@@ -64,16 +265,18 @@ var rx = {
     },
     validate: function (selector, onFail) {
         onFail = onFail || function (elm, failMsg, failElmId) {
-            var failElm = $("#" + failElmId);
+            var x = "_x", failElm = $("#" + failElmId);
             if (!failMsg) {
                 failElm.hide();
-                elm.css("border", "solid 1px #ccc");
+                if (elm.attr2(x)==x) {
+                    elm.css("border", "1px solid #ccc");
+                }
                 return;
             }
             if (failElm.text(failMsg).show().length == 0) {
                 $("<b id='" + failElmId + "' class='red'>" + failMsg + "</b>").insertAfter(elm);
             }
-            elm.css("border", "dashed 1px red");
+            elm.css("border", "1px dashed red").attr2(x, x);
         };
         var firstErr = null;
         var func = function (elm, failMsg) {
@@ -188,32 +391,29 @@ var rx = {
     },
     getForm: function (selector, data, preFunc) {
         data = data || {};
-        $(selector).find("input,select").each(function (i, elm) {
+        $(selector).find("input,select,textarea").each(function (i, elm) {
             elm = $(elm);
-            var pn = elm.attr2("id") || elm.attr2("name");
-            console.log(pn);
-            if (!pn) {
-                return;
-            }
-            if (!preFunc(elm, pn, data)) {
+            var pn = elm.attr2("id") || elm.attr2("name"), pv = elm.val();
+            // console.log(pn, ": ", pv);
+            if (!pn || !pv || (preFunc && !preFunc(elm, pn, data))) {
                 return;
             }
             if (elm.attr2("timestamp") != undefined) {
-                data[pn] = new Date(elm.val()).getTime();
-                console.log("timestamp", elm.attr2("timestamp"), elm.val(), data[pn]);
+                data[pn] = new Date(pv).getTime();
+                console.log("timestamp", elm.attr2("timestamp"), pv, data[pn]);
             }
-            data[pn] = elm.val();
+            data[pn] = pv;
         });
         return data;
     },
     setForm: function (selector, data, mapFunc) {
-        $(selector).find("input,select,img").each(function (i, elm) {
+        $(selector).find("input,select,textarea,img").each(function (i, elm) {
             elm = $(elm);
-            var pn = elm.attr2("id") || elm.attr2("name");
-            if (!pn) {
+            var pn = elm.attr2("id") || elm.attr2("name"), pv = mapFunc ? mapFunc(pn, data) : data[pn];
+            if (!pn || !pv) {
                 return true;
             }
-            var pv = mapFunc ? mapFunc(pn, data) : data[pn];
+            // console.log(pn, ": ", pv);
             if (rx.equalsIgnoreCase(elm.attr2("tagName"), "img")) {
                 if (pv) {
                     elm.attr2("src", pv).show();
